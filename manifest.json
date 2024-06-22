@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube AI Filter",
+  "version": "1.0",
+  "description": "Filters YouTube search results using AI to compare video titles with the search query.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "options_page": "options.html"
+}
