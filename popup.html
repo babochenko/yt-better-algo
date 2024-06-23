@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube AI Filter Settings</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"], input[type="checkbox"] { margin-top: 5px; }
+    button { margin-top: 10px; padding: 5px 10px; }
+    .toggle-container { display: flex; align-items: center; }
+    .toggle-label { margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <h1>YouTube AI Filter Settings</h1>
+
+  <div class="toggle-container">
+    <input type="checkbox" id="enabled-toggle">
+    <label for="enabled-toggle" class="toggle-label">Enable Extension</label>
+  </div>
+
+  <label for="apiKey">OpenAI API Key:</label>
+  <input type="text" id="apiKey" placeholder="Enter your OpenAI API key" />
+
+  <button id="saveSettings">Save Settings</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
