@@ -1,3 +1,5 @@
+const CATCH_ALL = 1
+
 const blacklistTopics = [
     "ASMR",
     "Beauty Product",
@@ -50,7 +52,7 @@ async function checkVideoEligible(apiKey, title) {
     ` between 0 and 1, where 0 means exactly the same and 1 means not similar at all. Respond with just the number` 
 
   const body = JSON.stringify({
-    model: 'gpt-4',
+    model: 'gpt-3.5-turbo-0125',
     messages: [
       { role: 'system', content: systemQuery},
       { role: 'user', content: userQuery},
@@ -59,14 +61,20 @@ async function checkVideoEligible(apiKey, title) {
   
   const response = await fetch(endpoint, { method: 'POST', headers: headers, body: body });
   const data = await response.json();
-  
-  const completion = data.choices[0].message.content;
-  console.log(`>>> ${title}: >> score: ${completion}`)
-  
+
+  console.log(`>>> ${title}: >> data: ${JSON.stringify(data)}`)
+
+  let completion = ''
+  try {
+    completion = data.choices[0].message.content;
+  } catch (e) {
+    return CATCH_ALL;
+  }
+
   if (completion) {
     return parseFloat(completion);
   } else {
-    return 0;
+    return CATCH_ALL;
   }
 }
 
