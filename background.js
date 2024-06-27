@@ -1,57 +1,20 @@
 const CATCH_ALL = []
-
-const blacklistTopics = [
-    "ASMR",
-    "Beauty Product",
-    "Celebrity",
-    "Challenges",
-    "Clickbait",
-    "Compilation",
-    "Conspiracy Theory",
-    "DIY",
-    "Drama",
-    "Feud",
-    "Gameplay",
-    "Get Rich Quick",
-    "Gossip",
-    "Health Advice",
-    "Hoarding",
-    "Investigations",
-    "Livestream",
-    "Mukbang",
-    "Obscure",
-    "Paranormal",
-    "Prank",
-    "Pseudo-Science",
-    "Rants",
-    "Reaction Video",
-    "Review",
-    "Satan",
-    "Sensationalist",
-    "Sports",
-    "Story Time",
-    "Street Interview",
-    "Top 10 List",
-    "Unboxing",
-    "Viral",
-    "Vlog",
-]
-
-const blacklistTopicsStr = `"${blacklistTopics.join(", ")}"`
+const GPT_BUFFER_SIZE = 10
+const MAX_VIDEO_THRESHOLD = 10
 
 function queryScores(videos) {
   return '- ' + videos.join('\n- ')
 }
 
 function parseScores(videos, resp) {
-  const scores = resp.split('\n').map(Number)
-  const zipped = [];
+  const scores = resp.split(',').map(Number)
+  const pairs = []
 
-  for (let i = 0; i < length; i++) {
-      zipped.push([videos[i], scores[i]]);
+  for (let i = 0; i < videos.length; i++) {
+      pairs.push([videos[i], scores[i]]);
   }
 
-  return zipped;
+  return pairs;
 }
 
 async function scoreVideos(apiKey, videos) {
@@ -68,7 +31,8 @@ async function scoreVideos(apiKey, videos) {
   
   For each video, provide a score between 0 and 1, where 0 means that this video is` +
   ` not helpful and distracting, and 1 means that this video is useful for my personal` +
-  ` growth. Respond with just the list of numbers`
+  ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
+  ` prefixes, or any other delimiters`
 
   const body = JSON.stringify({
     model: 'gpt-4o',
@@ -81,16 +45,15 @@ async function scoreVideos(apiKey, videos) {
   const response = await fetch(endpoint, { method: 'POST', headers: headers, body: body });
   const data = await response.json();
 
-  let completion = ''
-  try {
-    completion = data.choices[0].message.content;
-  } catch (e) {
+  if ("error" in data) {
+    console.log('rate limit exceeded');
     return CATCH_ALL;
   }
 
-  if (completion) {
-    return parseScores(videos, completion);
-  } else {
+  try {
+    return data.choices[0].message.content;
+  } catch (e) {
+    console.log(e);
     return CATCH_ALL;
   }
 }
@@ -103,38 +66,49 @@ class Buffer {
   }
 
   async append(input, transform) {
-      return new Promise((resolve) => {
+      return new Promise(async (resolve) => {
           this.buffer.push(input);
           this.promises.push(resolve);
 
-          if (this.buffer.length >= this.size) {
+          if (this.buffer.length == this.size) {
               // Apply the transformation function to the buffer
-              const transformedBuffer = transform(this.buffer);
+              const buf = [...this.buffer];
+              this.buffer = [];
+              
+              const proms = [...this.promises];
+              this.promises = [];
+
+              const transformedBuffer = await transform(buf);
 
               // Resolve each promise with the corresponding transformed value
-              this.promises.forEach((resolve, index) => {
-                  resolve(transformedBuffer[index]);
+              proms.forEach((resolve, index) => {
+                  resolve(transformedBuffer[index][1]);
               });
-
-              // Reset buffer and promises
-              this.buffer = [];
-              this.promises = [];
           }
       });
   }
 }
 
-const buffer = new Buffer(10)
+let videoCount = 0
+const buffer = new Buffer(GPT_BUFFER_SIZE)
 
 async function checkVideoEligible(apiKey, title) {
-  const scores = await buffer.append(title, async function(buf) {
-    return scoreVideos(apiKey, buf);
-  })
-  return scores[title];
+  return await buffer.append(title, async function(buf) {
+    const data = await scoreVideos(apiKey, buf);
+    const s = parseScores(buf, data);
+    videoCount += s.length
+    return s
+  });
 }
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+function onNextVideo(request, sendResponse) {
   if (request.action === "checkVideoEligible") {
+    if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
+      console.log('Score response limit exceeded, stopping listener.');
+      return;
+    }
+
+    chrome.runtime.scoreCount = 0;
     chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'], (result) => {
       if (!result.extensionEnabled) {
         console.log('>> extension is disabled');
@@ -146,10 +120,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       } else {
         checkVideoEligible(result.openaiApiKey, request.title).then(score => {
+          console.log(score)
+          chrome.runtime.scoreCount++;
           sendResponse({ score: score });
         });
       }
     });
     return true;
   }
+}
+
+let count = 0;
+chrome.runtime.onMessage.addListener(function listener(request, sender, sendResponse) {
+  count++;
+  if (count > 30) {
+    chrome.runtime.onMessage.removeListener(listener);
+  }
+  onNextVideo(request, sendResponse);
 });
