@@ -1,16 +1,33 @@
+const queryVideo = (title) => {
+  const selector = 'ytd-rich-item-renderer'
+  const xpath = `//${selector}[contains(., '${title}')]`;
+
+  const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+  return result.singleNodeValue
+}
+
+const onScoreVideo = (msg) => {
+  if (!msg || msg.action !== "onScoreVideo") {
+    return;
+  }
+
+  if (msg.score < 0.5) { // You can adjust the threshold
+    const video = queryFideo(msg.title)
+    video.style.display = "none"; // Hide non-matching videos
+  }
+}
+
 // Observe changes on the search results page to filter the videos
-const observer = new MutationObserver((mutations) => {
+const youtubeObserver = new MutationObserver(() => {
   const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
   videos.forEach((video) => {
     const title = video.querySelector("#video-title");
     if (title) {
       chrome.runtime.sendMessage({
-        action: "checkVideoEligible",
-        title: title.innerText
-      }, (response) => {
-        if (response && response.score < 0.5) { // You can adjust the threshold
-          video.style.display = "none"; // Hide non-matching videos
-        }
+        action: "getScoreVideo",
+        title: title.innerText,
+      }, resp => {
+        console.log(JSON.stringify(resp))
       });
     }
   });
@@ -19,5 +36,5 @@ const observer = new MutationObserver((mutations) => {
 // Start observing the search results container for changes
 const videos = document.querySelector("#contents.style-scope.ytd-rich-grid-renderer");
 if (videos) {
-  observer.observe(videos, { childList: true, subtree: true });
+  youtubeObserver.observe(videos, { childList: true, subtree: true });
 }

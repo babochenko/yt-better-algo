@@ -9,13 +9,13 @@ function parseScores(videos, resp) {
   const pairs = [];
 
   for (let i = 0; i < videos.length; i++) {
-    pairs.push([videos[i], scores[i]]);
+    pairs.push({title: videos[i], score: scores[i]});
   }
 
   return pairs;
 }
 
-export async function scoreVideos(apiKey, videos) {
+export async function scoreVideos(apiKey, videos, callback) {
   const endpoint = "https://api.openai.com/v1/chat/completions";
 
   const headers = {
@@ -57,7 +57,7 @@ export async function scoreVideos(apiKey, videos) {
     const content = data.choices[0].message.content;
     return parseScores(videos, content);
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return CATCH_ALL;
   }
 }
