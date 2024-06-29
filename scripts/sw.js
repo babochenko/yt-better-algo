@@ -39,16 +39,16 @@ async function getScoreVideo(request) {
 let count = 0;
 chrome.runtime.scoreCount = 0;
 
-listenMessage('getScoreVideo', (req, onResp) => {
-  count++;
-  if (count > 30) {
-    return;
-  }
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'getScoreVideo') {
+    count++;
+    if (count > 30) {
+      (async () => {
+        const scores = await getScoreVideo(msg)
+        sendResponse(scores);
+      })()
+    }
 
-  (async () => {
-    const scores = await getScoreVideo(req)
-    scores.forEach(score => {
-      onResp(score);
-    })
-  })()
-});
+    return true
+  }
+})

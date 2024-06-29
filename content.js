@@ -10,11 +10,12 @@ const onScoreVideo = (msg) => {
   if (!msg || msg.action !== "onScoreVideo") {
     return;
   }
-
-  if (msg.score < 0.5) { // You can adjust the threshold
-    const video = queryFideo(msg.title)
-    video.style.display = "none"; // Hide non-matching videos
-  }
+  msg.scores.forEach(entry => {
+    if (entry.score < 0.5) { // You can adjust the threshold
+      const video = queryVideo(entry.title)
+      video.style.display = "none"; // Hide non-matching videos
+    }
+  })
 }
 
 // Observe changes on the search results page to filter the videos
