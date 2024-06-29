@@ -42,13 +42,12 @@ chrome.runtime.scoreCount = 0;
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'getScoreVideo') {
     count++;
-    if (count > 30) {
+    if (count < 30) {
       (async () => {
         const scores = await getScoreVideo(msg)
         sendResponse(scores);
       })()
+      return true
     }
-
-    return true
   }
 })

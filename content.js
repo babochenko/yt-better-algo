@@ -6,14 +6,11 @@ const queryVideo = (title) => {
   return result.singleNodeValue
 }
 
-const onScoreVideo = (msg) => {
-  if (!msg || msg.action !== "onScoreVideo") {
-    return;
-  }
-  msg.scores.forEach(entry => {
+const onScoreVideo = (scores) => {
+  scores.forEach(entry => {
     if (entry.score < 0.5) { // You can adjust the threshold
       const video = queryVideo(entry.title)
-      video.style.display = "none"; // Hide non-matching videos
+      video.remove()
     }
   })
 }
@@ -28,7 +25,7 @@ const youtubeObserver = new MutationObserver(() => {
         action: "getScoreVideo",
         title: title.innerText,
       }, resp => {
-        console.log(JSON.stringify(resp))
+        onScoreVideo(resp)
       });
     }
   });
