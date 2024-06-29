@@ -5,7 +5,8 @@
   "description": "Filters YouTube search results using AI to compare video titles with the search query.",
   "permissions": ["activeTab", "scripting", "storage"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {

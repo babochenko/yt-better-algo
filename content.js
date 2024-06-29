@@ -2,12 +2,11 @@
 const observer = new MutationObserver((mutations) => {
   const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
   videos.forEach((video) => {
-    const titleElement = video.querySelector("#video-title");
-    if (titleElement) {
-      const titleText = titleElement.innerText;
+    const title = video.querySelector("#video-title");
+    if (title) {
       chrome.runtime.sendMessage({
         action: "checkVideoEligible",
-        title: titleText
+        title: title.innerText
       }, (response) => {
         if (response && response.score < 0.5) { // You can adjust the threshold
           video.style.display = "none"; // Hide non-matching videos
@@ -18,7 +17,7 @@ const observer = new MutationObserver((mutations) => {
 });
 
 // Start observing the search results container for changes
-const targetNode = document.querySelector("#contents.style-scope.ytd-rich-grid-renderer");
-if (targetNode) {
-  observer.observe(targetNode, { childList: true, subtree: true });
+const videos = document.querySelector("#contents.style-scope.ytd-rich-grid-renderer");
+if (videos) {
+  observer.observe(videos, { childList: true, subtree: true });
 }
