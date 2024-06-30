@@ -15,7 +15,8 @@ class Buffer {
 
     if (this.buffer.length == this.size) {
       const buf = [...this.buffer];
-      this.buffer = [];
+      console.log(`>>> ${buf}`)
+      this.clear()
       return buf;
     }
   }

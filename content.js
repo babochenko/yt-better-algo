@@ -7,8 +7,40 @@ const queryVideo = (title) => {
   return result.singleNodeValue
 }
 
+const onCompactRows = () => {
+  const rows = document.querySelectorAll('ytd-rich-grid-row');
+  const videos = document.querySelectorAll('ytd-rich-grid-row ytd-rich-grid-media');
+
+  let ri = 0
+  let vi = 0
+  while (ri < rows.length && vi < videos.length) {
+    const video = videos[vi]
+    video.parentElement.removeChild(video)
+
+    const row = rows[ri]
+    row.appendChild(video)
+    console.log(`moved video ${video}`)
+    const rowVids = rows[ri].querySelectorAll('ytd-rich-grid-media')
+
+    if (rowVids.length > 3) {
+      ri++
+    }
+
+    vi++
+  }
+
+  document.querySelectorAll('ytd-rich-grid-row').forEach(row => {
+    if (row.querySelectorAll('ytd-rich-grid-media').length === 0) {
+      row.remove()
+    }
+  })
+}
+
 const onStopLoadingVideos = () => {
-  document.querySelector("ytd-continuation-item-renderer").remove()
+  const loader = document.querySelector("ytd-continuation-item-renderer")
+  if (loader) {
+    loader.remove()
+  }
 }
 
 const onScoreVideo = (scores) => {
@@ -28,11 +60,16 @@ const onScoreVideo = (scores) => {
     counter.textContent = `videos displayed: ${displayed}, removed: ${removed}`
 
     const video = queryVideo(entry.title)
+    if (!video) {
+      // console.log(`video ${video} not found in dom`)
+      return;
+    }
+
     if (shouldDisplay) {
-      console.log(`displaying ${entry.title}`)
+      // console.log(`displaying ${entry.title}`)
       video.style.display = 'block';
     } else {
-      console.log(`hiding ${entry.title}`)
+      // console.log(`hiding ${entry.title}`)
       video.remove()
     }
   })
