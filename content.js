@@ -8,8 +8,8 @@ const queryVideo = (title) => {
 }
 
 const onCompactRows = () => {
-  const rows = document.querySelectorAll('ytd-rich-grid-row');
-  const videos = document.querySelectorAll('ytd-rich-grid-row ytd-rich-grid-media');
+  const rows = document.querySelectorAll('ytd-rich-grid-row#contents:has(ytd-rich-item-renderer.style-scope.ytd-rich-grid-row)');
+  const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
 
   let ri = 0
   let vi = 0
@@ -22,7 +22,7 @@ const onCompactRows = () => {
     console.log(`moved video ${video}`)
     const rowVids = rows[ri].querySelectorAll('ytd-rich-grid-media')
 
-    if (rowVids.length > 3) {
+    if (rowVids.length >= 3) {
       ri++
     }
 
@@ -30,17 +30,19 @@ const onCompactRows = () => {
   }
 
   document.querySelectorAll('ytd-rich-grid-row').forEach(row => {
-    if (row.querySelectorAll('ytd-rich-grid-media').length === 0) {
+    if (row.querySelectorAll('ytd-rich-item-renderer').length === 0) {
       row.remove()
     }
   })
 }
 
-const onStopLoadingVideos = () => {
+const onStopLoadingVideos = (observer) => {
   const loader = document.querySelector("ytd-continuation-item-renderer")
   if (loader) {
     loader.remove()
   }
+  observer.disconnect()
+  onCompactRows()
 }
 
 const onScoreVideo = (scores) => {
@@ -60,11 +62,6 @@ const onScoreVideo = (scores) => {
     counter.textContent = `videos displayed: ${displayed}, removed: ${removed}`
 
     const video = queryVideo(entry.title)
-    if (!video) {
-      // console.log(`video ${video} not found in dom`)
-      return;
-    }
-
     if (shouldDisplay) {
       // console.log(`displaying ${entry.title}`)
       video.style.display = 'block';
@@ -87,6 +84,7 @@ const getCounter = () => {
     counter.id = counterId;
     counter.textContent = "videos displayed: 0, removed: 0";
     counter.style.paddingLeft = '200px';
+    counter.style.background = 'white';
     
     getCounterParent().insertBefore(counter, parent.firstChild);
   }
@@ -105,7 +103,6 @@ const observeVideos = (videos) => {
 
       const title = video.querySelector("#video-title");
       if (title) {
-        // video.style.display = 'none';
         chrome.runtime.sendMessage({
           action: "getScoreVideo",
           title: title.innerText,
@@ -113,7 +110,7 @@ const observeVideos = (videos) => {
           if (resp.action === 'onScore') {
             onScoreVideo(resp.scores)
           } else if (resp.action === 'onStopLoading') {
-            onStopLoadingVideos()
+            onStopLoadingVideos(youtubeObserver)
           } else {
             console.error(`unsupported message: ${resp}`)
           }
