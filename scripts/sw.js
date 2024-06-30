@@ -1,13 +1,35 @@
-import { listenMessage } from './messages.js';
-import { Buffer } from './buffer.js';
 import { scoreVideos } from './api.js';
 
 const MAX_VIDEO_THRESHOLD = 10;
 const GPT_BUFFER_SIZE = 20;
 
+class Buffer {
+  constructor(size) {
+    this.size = size;
+    this.buffer = [];
+    this.promises = [];
+  }
+
+  append(element) {
+    this.buffer.push(element);
+
+    if (this.buffer.length == this.size) {
+      const buf = [...this.buffer];
+      this.buffer = [];
+      return buf;
+    }
+  }
+
+  clear() {
+    this.buffer = []
+  }
+}
+
+let countDisplayed = 0;
+let countRemoved = 0;
 const buffer = new Buffer(GPT_BUFFER_SIZE);
 
-async function getScoreVideo(request) {
+const doScoreVideo = async (request) => {
   if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
     console.log('Score response limit exceeded, stopping listener.');
     return [];
@@ -17,7 +39,7 @@ async function getScoreVideo(request) {
 
   const {
     extensionEnabled: isEnabled,
-    openaiApiKey: apiKey
+    openaiApiKey: apiKey,
   } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
 
   if (!isEnabled) {
@@ -36,31 +58,37 @@ async function getScoreVideo(request) {
   }
 }
 
-let count = 0;
+const onScoreVideo = async (msg, sendResponse) => {
+  if (countDisplayed >= 20 || countRemoved >= 50) {
+    console.log('hit a threshold on scored video count - not scoring any more videos')
+    sendResponse({
+      action: 'onStopLoading',
+    });
+    return;
+  }
+
+  const scores = await doScoreVideo(msg)
+  const shouldDisplay = Object.groupBy(scores, ({score}) => score > 0.5)
+  countDisplayed += (shouldDisplay[true] || []).length
+  countRemoved += (shouldDisplay[false] || []).length
+
+  sendResponse({
+    action: 'onScore',
+    scores: scores,
+  });
+}
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
-    count = 0;
+    countDisplayed = 0;
+    countRemoved = 0;
+    buffer.clear()
   }
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'getScoreVideo') {
-    if (count < 30) {
-      (async () => {
-        const scores = await getScoreVideo(msg)
-        count += scores.length;
-        sendResponse({
-          action: 'onScore',
-          scores: scores,
-        });
-      })()
-    } else {
-      console.log('count is over 30 - not scoring any more videos')
-      sendResponse({
-        action: 'onStopLoading'
-      });
-    }
+    onScoreVideo(msg, sendResponse)
     return true
   }
 })
