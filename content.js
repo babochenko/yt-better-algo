@@ -7,15 +7,33 @@ const queryVideo = (title) => {
   return result.singleNodeValue
 }
 
+const onStopLoadingVideos = () => {
+  document.querySelector("ytd-continuation-item-renderer").remove()
+}
+
 const onScoreVideo = (scores) => {
   scores.forEach(entry => {
-    if (entry.score < 0.5) { // You can adjust the threshold
-      const video = queryVideo(entry.title)
-      video.remove()
+    const shouldDisplay = entry.score > 0.5;
 
-      const counter = getCounter();
-      const count = parseInt(counter.innerText.split(": ")[1], 10)
-      counter.textContent = `removed videos: ${count + 1}`
+    const counter = getCounter();
+    const parts = counter.innerText.split(', ');
+
+    let displayed = parseInt(parts[0].split(": ")[1], 10)
+    let removed = parseInt(parts[1].split(": ")[1], 10)
+    if (shouldDisplay) {
+      displayed++;
+    } else {
+      removed++;
+    }
+    counter.textContent = `videos displayed: ${displayed}, removed: ${removed}`
+
+    const video = queryVideo(entry.title)
+    if (shouldDisplay) {
+      console.log(`displaying ${entry.title}`)
+      video.style.display = 'block';
+    } else {
+      console.log(`hiding ${entry.title}`)
+      video.remove()
     }
   })
 }
@@ -30,7 +48,7 @@ const getCounter = () => {
   if (!counter) {
     counter = document.createElement("div");
     counter.id = counterId;
-    counter.textContent = "removed videos: 0";
+    counter.textContent = "videos displayed: 0, removed: 0";
     counter.style.paddingLeft = '200px';
     
     getCounterParent().insertBefore(counter, parent.firstChild);
@@ -42,13 +60,26 @@ const observeVideos = (videos) => {
   const youtubeObserver = new MutationObserver(() => {
     const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
     videos.forEach((video) => {
+      const isAd = video.querySelector('ytd-display-ad-renderer');
+      if (isAd) {
+        video.remove();
+        return;
+      }
+
       const title = video.querySelector("#video-title");
       if (title) {
+        // video.style.display = 'none';
         chrome.runtime.sendMessage({
           action: "getScoreVideo",
           title: title.innerText,
         }, resp => {
-          onScoreVideo(resp)
+          if (resp.action === 'onScore') {
+            onScoreVideo(resp.scores)
+          } else if (resp.action === 'onStopLoading') {
+            onStopLoadingVideos()
+          } else {
+            console.error(`unsupported message: ${resp}`)
+          }
         });
       }
     });

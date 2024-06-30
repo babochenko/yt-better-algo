@@ -50,11 +50,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       (async () => {
         const scores = await getScoreVideo(msg)
         count += scores.length;
-        sendResponse(scores);
+        sendResponse({
+          action: 'onScore',
+          scores: scores,
+        });
       })()
     } else {
       console.log('count is over 30 - not scoring any more videos')
-      sendResponse([]);
+      sendResponse({
+        action: 'onStopLoading'
+      });
     }
     return true
   }
