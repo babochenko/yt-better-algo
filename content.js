@@ -20,26 +20,6 @@ const onScoreVideo = (scores) => {
   })
 }
 
-// Observe changes on the search results page to filter the videos
-const youtubeObserver = new MutationObserver(() => {
-  const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
-  videos.forEach((video) => {
-    const title = video.querySelector("#video-title");
-    if (title) {
-      chrome.runtime.sendMessage({
-        action: "getScoreVideo",
-        title: title.innerText,
-      }, resp => {
-        if (resp === undefined) {
-          console.error('resp is undefined')
-        } else {
-          onScoreVideo(resp)
-        }
-      });
-    }
-  });
-});
-
 const getCounterParent = () => {
   return document.querySelector("ytd-masthead")
 }
@@ -58,9 +38,42 @@ const getCounter = () => {
   return counter;
 }
 
-// Start observing the search results container for changes
-const videos = document.querySelector("#contents.style-scope.ytd-rich-grid-renderer");
-if (videos) {
+const observeVideos = (videos) => {
+  const youtubeObserver = new MutationObserver(() => {
+    const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
+    videos.forEach((video) => {
+      const title = video.querySelector("#video-title");
+      if (title) {
+        chrome.runtime.sendMessage({
+          action: "getScoreVideo",
+          title: title.innerText,
+        }, resp => {
+          onScoreVideo(resp)
+        });
+      }
+    });
+  });
+
   getCounter();
   youtubeObserver.observe(videos, { childList: true, subtree: true });
 }
+
+const waitForVideos = () => new Promise(resolve => {
+  const videosSelector = "#contents.style-scope.ytd-rich-grid-renderer";
+  const videos = document.querySelector(videosSelector);
+  if (videos) {
+    resolve(videos);
+  }
+
+  const bodyObserver = new MutationObserver(() => {
+    const videos = document.querySelector(videosSelector);
+    if (videos) {
+      bodyObserver.disconnect();
+      resolve(videos);
+    }
+  })
+
+  bodyObserver.observe(document.body, { childList: true, subtree: true });
+});
+
+waitForVideos().then(observeVideos)

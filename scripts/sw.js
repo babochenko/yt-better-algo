@@ -37,17 +37,25 @@ async function getScoreVideo(request) {
 }
 
 let count = 0;
-chrome.runtime.scoreCount = 0;
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    count = 0;
+  }
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'getScoreVideo') {
-    count++;
     if (count < 30) {
       (async () => {
         const scores = await getScoreVideo(msg)
+        count += scores.length;
         sendResponse(scores);
       })()
-      return true
+    } else {
+      console.log('count is over 30 - not scoring any more videos')
+      sendResponse([]);
     }
+    return true
   }
 })
