@@ -15,7 +15,7 @@ function parseScores(videos, resp) {
   return pairs;
 }
 
-export async function scoreVideos(apiKey, videos, callback) {
+export async function scoreVideos(apiKey, videos) {
   const endpoint = "https://api.openai.com/v1/chat/completions";
 
   const headers = {
