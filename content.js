@@ -64,7 +64,8 @@ const onScoreVideo = (scores) => {
     const video = queryVideo(entry.title)
     if (shouldDisplay) {
       // console.log(`displaying ${entry.title}`)
-      video.style.display = 'block';
+      video.style.visibility = 'visible';
+      video.style.pointerEvents = 'all';
     } else {
       // console.log(`hiding ${entry.title}`)
       video.remove()
@@ -100,6 +101,11 @@ const observeVideos = (videos) => {
         video.remove();
         return;
       }
+
+      // doesn't work for some reason - if you set it here' the videos get hidden
+      // and deleted from dom. Might need another way to leave the placeholders
+      // video.style.visibility = 'hidden';
+      // video.style.pointerEvents = 'none';
 
       const title = video.querySelector("#video-title");
       if (title) {
