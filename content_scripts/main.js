@@ -1,3 +1,17 @@
+const logSeen = '[filter_seen]'
+const logRm = '[filter_rm]'
+const logNew = '[vid]'
+const logDisplay = '[on_display]'
+const logHide = '[on_hide]'
+
+const log = (pfx, text) => {
+  console.log(pfx, text)
+}
+
+const error = (text) => {
+  console.error(text)
+}
+
 const queryAllVideos = () => {
   return document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
 }
@@ -23,7 +37,7 @@ const onCompactRows = () => {
 
     const row = rows[ri]
     row.appendChild(video)
-    console.log(`moved video ${video}`)
+    log(`moved video ${video}`)
     const rowVids = rows[ri].querySelectorAll('ytd-rich-grid-media')
 
     if (rowVids.length >= 3) {
@@ -41,12 +55,7 @@ const onCompactRows = () => {
 }
 
 const onStopLoadingVideos = (observer) => {
-  const stopLoader = () => {
-    const loader = document.querySelector("ytd-continuation-item-renderer")
-    if (loader) {
-      loader.remove()
-    }
-  }
+  const stopLoader = () => filterRemoved(document)
 
   stopLoader();
   new MutationObserver(stopLoader).observe(queryAllVideos(), { childList: true, subtree: true });
@@ -56,6 +65,7 @@ const onStopLoadingVideos = (observer) => {
 }
 
 const onScoreVideo = (scores) => {
+  log('scores', JSON.stringify(scores))
   scores.forEach(entry => {
     const shouldDisplay = entry.score > 0.5;
 
@@ -73,11 +83,12 @@ const onScoreVideo = (scores) => {
 
     const video = queryVideo(entry.title)
     if (shouldDisplay) {
-      // console.log(`displaying ${entry.title}`)
+      log(logDisplay, entry.title)
       video.style.opacity = 1;
       video.style.pointerEvents = 'all';
     } else {
-      // console.log(`hiding ${entry.title}`)
+      video.style.opacity = 1;
+      log(logHide, entry.title)
       video.remove()
     }
   })
@@ -102,13 +113,46 @@ const getCounter = () => {
   return counter;
 }
 
+const selectorsToRemove = {
+  breakingNews: 'ytd-rich-shelf-renderer',
+  adVideo: 'ytd-display-ad-renderer',
+  continuation: 'ytd-continuation-item-renderer',
+}
+
+const filterRemoved = (video) => {
+  for (const [_, sel] of Object.entries(selectorsToRemove)) {
+    const toRemove = video.querySelector(sel);
+    if (toRemove) {
+      const title = toRemove.querySelector("#video-title")
+      if (title) {
+        log(logRm, title.innerText)
+      }
+
+      toRemove.remove();
+      return true;
+    }
+  }
+  return false;
+}
+
+const filterSeen = (video) => {
+  const title = video.querySelector("#video-title").innerText;
+  const attr = 'fsch-seen';
+  if (video.getAttribute(attr) === 'true') {
+    log(logSeen, title)
+    return true;
+  }
+  log(logNew, title)
+  video.setAttribute(attr, 'true');
+  return false;
+}
+
 const observeVideos = (videos) => {
   const youtubeObserver = new MutationObserver(() => {
+    filterRemoved(document);
     queryAllVideos().forEach((video) => {
-      const isAd = video.querySelector('ytd-display-ad-renderer');
-      if (isAd) {
-        video.remove();
-        return;
+      if (filterRemoved(video) || filterSeen(video)) {
+        return
       }
 
       // doesn't work for some reason - if you set it here' the videos get hidden
@@ -127,7 +171,7 @@ const observeVideos = (videos) => {
           } else if (resp.action === 'onStopLoading') {
             onStopLoadingVideos(youtubeObserver)
           } else {
-            console.error(`unsupported message: ${resp}`)
+            error(`unsupported message: ${resp}`)
           }
         });
       }

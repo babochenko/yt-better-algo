@@ -1,0 +1,10 @@
+{
+    "name": "@babochenko/fairsearch",
+    "version": "0.0.1",
+    "scripts": {
+        "build": "webpack --config webpack.config.js"
+    },
+    "dependencies": {
+        "webpack": "5.92.1"
+    }
+}

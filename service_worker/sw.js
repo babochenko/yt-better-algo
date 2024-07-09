@@ -30,9 +30,11 @@ let countDisplayed = 0;
 let countRemoved = 0;
 const buffer = new Buffer(GPT_BUFFER_SIZE);
 
-const stubScoreVideos = async (_, videos) => 
-  new Promise(r => setTimeout(r, 1000)).then(_ => 
+const stubScoreVideos = async (_, videos) => {
+  console.log('...', JSON.stringify(videos))
+  return new Promise(r => setTimeout(r, 1000)).then(_ => 
     videos.map(v => ({title: v, score: Math.random()})))
+}
 
 const doScoreVideo = async (request) => {
   if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
