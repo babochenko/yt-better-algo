@@ -30,6 +30,10 @@ let countDisplayed = 0;
 let countRemoved = 0;
 const buffer = new Buffer(GPT_BUFFER_SIZE);
 
+const stubScoreVideos = async (_, videos) => 
+  new Promise(r => setTimeout(r, 1000)).then(_ => 
+    videos.map(v => ({title: v, score: Math.random()})))
+
 const doScoreVideo = async (request) => {
   if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
     console.log('Score response limit exceeded, stopping listener.');
@@ -53,7 +57,8 @@ const doScoreVideo = async (request) => {
 
   const batch = buffer.append(title);
   if (batch) {
-    return await scoreVideos(apiKey, batch)
+    // return await scoreVideos(apiKey, batch)
+    return await stubScoreVideos(apiKey, batch)
   } else {
     return []
   }

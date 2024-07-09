@@ -1,3 +1,7 @@
+const queryAllVideos = () => {
+  return document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
+}
+
 const queryVideo = (title) => {
   const escaped = title.replace("'", '&quot;')
   const selector = 'ytd-rich-item-renderer'
@@ -37,10 +41,16 @@ const onCompactRows = () => {
 }
 
 const onStopLoadingVideos = (observer) => {
-  const loader = document.querySelector("ytd-continuation-item-renderer")
-  if (loader) {
-    loader.remove()
+  const stopLoader = () => {
+    const loader = document.querySelector("ytd-continuation-item-renderer")
+    if (loader) {
+      loader.remove()
+    }
   }
+
+  stopLoader();
+  new MutationObserver(stopLoader).observe(queryAllVideos(), { childList: true, subtree: true });
+
   observer.disconnect()
   onCompactRows()
 }
@@ -64,7 +74,7 @@ const onScoreVideo = (scores) => {
     const video = queryVideo(entry.title)
     if (shouldDisplay) {
       // console.log(`displaying ${entry.title}`)
-      video.style.visibility = 'visible';
+      video.style.opacity = 1;
       video.style.pointerEvents = 'all';
     } else {
       // console.log(`hiding ${entry.title}`)
@@ -94,8 +104,7 @@ const getCounter = () => {
 
 const observeVideos = (videos) => {
   const youtubeObserver = new MutationObserver(() => {
-    const videos = document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
-    videos.forEach((video) => {
+    queryAllVideos().forEach((video) => {
       const isAd = video.querySelector('ytd-display-ad-renderer');
       if (isAd) {
         video.remove();
@@ -104,8 +113,8 @@ const observeVideos = (videos) => {
 
       // doesn't work for some reason - if you set it here' the videos get hidden
       // and deleted from dom. Might need another way to leave the placeholders
-      // video.style.visibility = 'hidden';
-      // video.style.pointerEvents = 'none';
+      video.style.opacity = 0;
+      video.style.pointerEvents = 'none';
 
       const title = video.querySelector("#video-title");
       if (title) {

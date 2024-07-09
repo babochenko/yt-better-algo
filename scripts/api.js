@@ -33,6 +33,8 @@ export async function scoreVideos(apiKey, videos) {
     ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
     ` prefixes, or any other delimiters`;
 
+  console.log(userQuery)
+
   const body = JSON.stringify({
     model: "gpt-4o",
     messages: [
