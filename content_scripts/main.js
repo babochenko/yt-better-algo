@@ -200,4 +200,36 @@ const waitForVideos = () => new Promise(resolve => {
   bodyObserver.observe(document.body, { childList: true, subtree: true });
 });
 
+const searches = [
+  '--- select',
+  'Machine learning',
+  'Minecraft',
+]
+
+const displayPredefinedSearches = () => {
+  const search = document.querySelector('#search-form')
+  if (!search) {
+    return;
+  }
+
+  const dropdown = document.createElement('select')
+  dropdown.id = 'fsch-dropdown'
+
+  for (var s of searches) {
+    const opt = document.createElement('option')
+    opt.value = s
+    opt.text = s
+    dropdown.appendChild(opt)
+  }
+
+  dropdown.addEventListener('change', () => {
+    const query = dropdown.options[dropdown.selectedIndex].text;
+    if (query !== '--- select') {
+      window.location.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+    }
+  })
+  search.appendChild(dropdown)
+}
+
+displayPredefinedSearches()
 waitForVideos().then(observeVideos)
