@@ -4,6 +4,17 @@ function queryScores(videos) {
   return "- " + videos.join("\n- ");
 }
 
+function buildQuery(videos) {
+  return `I have a list of videos:
+  
+  ${queryScores(videos)}
+  
+  For each video, provide a score between 0 and 1, where 0 means that this video is` +
+  ` not helpful and distracting, and 1 means that this video is useful for my personal` +
+  ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
+  ` prefixes, or any other delimiters`;
+}
+
 function parseScores(videos, resp) {
   const scores = resp.split(",").map(Number);
   const pairs = [];
@@ -23,16 +34,7 @@ export async function scoreVideos(apiKey, videos) {
     Authorization: `Bearer ${apiKey}`,
   };
   const systemQuery = "You are a helpful assistant.";
-  const userQuery =
-    `I have a list of videos:
-    
-    ${queryScores(videos)}
-    
-    For each video, provide a score between 0 and 1, where 0 means that this video is` +
-    ` not helpful and distracting, and 1 means that this video is useful for my personal` +
-    ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
-    ` prefixes, or any other delimiters`;
-
+  const userQuery = buildQuery(videos);
   console.log(userQuery)
 
   const body = JSON.stringify({
