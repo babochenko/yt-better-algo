@@ -17,12 +17,13 @@ const queryAllVideos = () => {
 }
 
 const queryVideo = (title) => {
-  const escaped = title.replace("'", '&quot;')
-  const selector = 'ytd-rich-item-renderer'
-  const xpath = `//${selector}[contains(., '${escaped}')]`;
-
-  const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-  return result.singleNodeValue
+  const videos = queryAllVideos();
+  for (const v of videos) {
+    const t = v.querySelector("#video-title")
+    if (t.innerText === title) {
+      return v;
+    }
+  }
 }
 
 const onCompactRows = () => {
@@ -136,7 +137,12 @@ const filterRemoved = (video) => {
 }
 
 const filterSeen = (video) => {
-  const title = video.querySelector("#video-title").innerText;
+  const titleEl = video.querySelector("#video-title");
+  if (!(titleEl && 'innerText' in titleEl)) {
+    return false;
+  }
+
+  const title = titleEl.innerText;
   const attr = 'fsch-seen';
   if (video.getAttribute(attr) === 'true') {
     log(logSeen, title)

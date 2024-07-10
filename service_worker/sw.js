@@ -59,8 +59,8 @@ const doScoreVideo = async (request) => {
 
   const batch = buffer.append(title);
   if (batch) {
-    // return await scoreVideos(apiKey, batch)
-    return await stubScoreVideos(apiKey, batch)
+    return await scoreVideos(apiKey, batch)
+    // return await stubScoreVideos(apiKey, batch)
   } else {
     return []
   }

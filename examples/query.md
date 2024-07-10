@@ -1,10 +1,6 @@
-I have a list of 23 videos:
+I have a list of 20 videos:
 
 - Yamal makes history as Spain reach final | Spain 2-1 France | Euro 2024 Highlights
-- How I’d learn ML in 2024 (if I could start over)
-- Rishi Sunak leaving 10 Downing Street
-- Give to Our God Immortal Praise | Lyric Video | ECCM Congregational Singing
-- Carlos comes from behind! | Carlos Alcaraz vs Tommy Paul | Highlights | Wimbledon 2024
 - MIGUEL ESTEVES CARDOSO - Não Mandas em Mim #4
 - WINDOH REAGE AO NOVO CARRO DE NUMEIRO!
 - Algorithmic Trading – Machine Learning & Quant Strategies Course with Python
@@ -23,5 +19,6 @@ I have a list of 23 videos:
 - Reporting on Doomsday Scenarios | 60 Minutes Full Episodes
 - Neural ODEs (NODEs) [Physics Informed Machine Learning]
 - 07.07.2024 Evening Worship - Paul Webb
+- Stats 102A - 2024 Summer - Video 23 - working with strings in R
 
-For each video, provide a score between 0 and 1, where 0 means that this video is not helpful and distracting, and 1 means that this video is useful for my personal growth. Respond with just the list of numbers, comma-separated, without spaces prefixes, or any other delimiters
+For each video, provide a score between 0 and 1, where 0 means that this video is not helpful and distracting, and 1 means that this video is educational and useful for my personal growth. Respond with just the list of numbers, comma-separated, without spaces prefixes, or any other delimiters
