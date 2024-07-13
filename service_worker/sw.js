@@ -1,7 +1,7 @@
 import { scoreVideos } from './api.js';
 
 const MAX_VIDEO_THRESHOLD = 10;
-const GPT_BUFFER_SIZE = 20;
+const GPT_BUFFER_SIZE = 15;
 
 class Buffer {
   constructor(size) {
@@ -13,7 +13,7 @@ class Buffer {
   append(element) {
     this.buffer.push(element);
 
-    if (this.buffer.length == this.size) {
+    if (this.buffer.length === this.size) {
       const buf = [...this.buffer];
       console.log(`>>> ${buf}`)
       this.clear()
