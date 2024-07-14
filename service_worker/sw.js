@@ -7,13 +7,17 @@ class Buffer {
   constructor(size) {
     this.size = size;
     this.buffer = [];
-    this.promises = [];
   }
 
   append(element) {
     this.buffer.push(element);
-
     if (this.buffer.length === this.size) {
+      return this.getNextBatch()
+    }
+  }
+
+  getNextBatch() {
+    if (this.buffer.length > 0) {
       const buf = [...this.buffer];
       console.log(`>>> ${buf}`)
       this.clear()
@@ -42,13 +46,12 @@ const doScoreVideo = async (request) => {
     return [];
   }
 
-  const title = request.title;
-
   const {
     extensionEnabled: isEnabled,
     openaiApiKey: apiKey,
   } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
 
+  const title = request.title;
   if (!isEnabled) {
     console.log('>> extension is disabled');
     return [{ title, score: 1 }]
@@ -66,16 +69,36 @@ const doScoreVideo = async (request) => {
   }
 }
 
-const onScoreVideo = async (msg, sendResponse) => {
-  if (countDisplayed >= 20 || countRemoved >= 50) {
-    console.log('hit a threshold on scored video count - not scoring any more videos')
-    sendResponse({
-      action: 'onStopLoading',
-    });
-    return;
+const doScoreVideoTimeout = async () => {
+  if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
+    console.log('Score response limit exceeded, stopping listener.');
+    return [];
   }
 
-  const scores = await doScoreVideo(msg)
+  const {
+    extensionEnabled: isEnabled,
+    openaiApiKey: apiKey,
+  } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
+
+  if (!isEnabled) {
+    console.log('>> extension is disabled');
+    return []
+  } else if (!apiKey) {
+    console.log('>> no openai api key');
+    return []
+  }
+
+  console.log(JSON.stringify(buffer))
+  const batch = buffer.getNextBatch();
+  if (batch) {
+    return await scoreVideos(apiKey, batch)
+    // return await stubScoreVideos(apiKey, batch)
+  } else {
+    return []
+  }
+}
+
+const onScores = (scores, sendResponse) => {
   const shouldDisplay = Object.groupBy(scores, ({score}) => score > 0.5)
   countDisplayed += (shouldDisplay[true] || []).length
   countRemoved += (shouldDisplay[false] || []).length
@@ -86,14 +109,46 @@ const onScoreVideo = async (msg, sendResponse) => {
   });
 }
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete') {
-    countDisplayed = 0;
-    countRemoved = 0;
-    buffer.clear()
-  }
-});
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
+let finalizer = null
+
+const onScoreVideo = async (msg, sendResponse) => {
+  if (countDisplayed >= 20 || countRemoved >= 50) {
+    console.log('hit a threshold on scored video count - not scoring any more videos')
+    sendResponse({
+      action: 'onStopLoading',
+    });
+    return;
+  }
+
+  if (!finalizer) {
+    console.log(Date())
+    finalizer = sleep(2000)
+      .then(() => doScoreVideoTimeout())
+      .then(s => {
+        console.log(Date())
+        console.log(JSON.stringify(s))
+        onScores(s, sendResponse)
+      })
+  }
+
+  const scores = await doScoreVideo(msg)
+  onScores(scores, sendResponse)
+}
+
+// what is this code supposed to do?
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete') {
+//     countDisplayed = 0;
+//     countRemoved = 0;
+//     buffer.clear()
+//   }
+// });
+
+// awaits from the message from FE
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'getScoreVideo') {
     onScoreVideo(msg, sendResponse)
