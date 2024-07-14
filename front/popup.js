@@ -1,20 +1,28 @@
 document.addEventListener('DOMContentLoaded', function () {
   // Load saved settings when the popup is opened
-  chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'], function (result) {
+  chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model'], function (result) {
     document.getElementById('enabled-toggle').checked = result.extensionEnabled ?? false;
-    document.getElementById('apiKey').value = result.openaiApiKey ?? '';
+    document.getElementById('key-openai').value = result.keyOpenai ?? '';
+    document.getElementById('key-groq').value = result.keyGroq ?? '';
+    document.getElementById('model').value = result.model ?? 'gpt4o';
   });
 
   // Save settings when the Save button is clicked
   document.getElementById('saveSettings').addEventListener('click', function () {
     const extensionEnabled = document.getElementById('enabled-toggle').checked;
-    const apiKey = document.getElementById('apiKey').value.trim();
+    const keyOpenai = document.getElementById('key-openai').value.trim();
+    const keyGroq = document.getElementById('key-groq').value.trim();
+
+    const modelSel = document.getElementById('model')
+    const model = modelSel.options[modelSel.selectedIndex].value;
 
     chrome.storage.sync.set({
-      extensionEnabled: extensionEnabled,
-      openaiApiKey: apiKey
+      extensionEnabled,
+      keyOpenai,
+      keyGroq,
+      model,
     }, function () {
-      alert('Settings saved successfully!');
+      console.log('Settings saved successfully!');
     });
   });
 });

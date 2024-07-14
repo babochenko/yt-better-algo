@@ -35,9 +35,12 @@ class Q {
   }
 
   video = (title) => {
+    if (!title) {
+      return
+    }
     for (const v of this.allVideos()) {
       const t = v.querySelector("#video-title")
-      if (t.innerText === title) {
+      if (t?.innerText === title) {
         return v;
       }
     }
@@ -60,8 +63,21 @@ class Q {
   }
 }
 
-class GPT4 {
-  genScores = async (apiKey, videos) => {
+const models = {
+  'llama70b': {
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "llama3-70b-8192",
+    apiKey: '...',
+  }, 'gpt4o': {
+    url: "https://api.openai.com/v1/chat/completions",
+    model: "gpt-4o",
+    apiKey: '...',
+  }
+}
+
+class API {
+
+  genScores = async (model, videos) => {
     const systemQuery = "You are a helpful assistant.";
     const userQuery = `I have a list of videos:
 
@@ -73,19 +89,20 @@ class GPT4 {
     ` prefixes, or any other delimiters`;
 
     const body = JSON.stringify({
-      model: "gpt-4o",
+      model: model.model,
       messages: [
         { role: "system", content: systemQuery },
         { role: "user", content: userQuery },
       ],
     });
 
-    const url = "https://api.openai.com/v1/chat/completions";
+    const url = model.url
     const headers = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${model.apiKey}`,
     };
 
+    console.log('calling model', model.model)
     const resp = await fetch(url, {method: "POST", headers, body}).then(r => r.json())
     const scoresStr = resp?.choices?.[0]?.message?.content
     if (!scoresStr) {
@@ -113,8 +130,8 @@ class GPT4 {
 }
 
 const MAX_VIDEO_THRESHOLD = 10;
-const buffer = new Buffer(15);
-const gpt4 = new GPT4();
+const buffer = new Buffer(10);
+const api = new API();
 const q = new Q();
 
 let countDisplayed = 0;
@@ -155,7 +172,7 @@ const displayVideos = (scores) => {
     counter.textContent = `videos displayed: ${displayed}, removed: ${removed}`
 
     const video = q.video(entry.title)
-    if (shouldDisplay) {
+    if (video && shouldDisplay) {
       console.log('[on_display]', entry.title)
       video.style.opacity = 1;
       video.style.pointerEvents = 'all';
@@ -197,7 +214,7 @@ const filterSeen = (video) => {
   const title = titleEl.innerText;
   const attr = 'fsch-seen';
   if (video.getAttribute(attr) === 'true') {
-    console.log('[filter_seen]', title)
+    // console.log('[filter_seen]', title)
     return true;
   }
   console.log('[vid]', title)
@@ -205,7 +222,7 @@ const filterSeen = (video) => {
   return false;
 }
 
-const filterApiKey = async () => {
+const filterModel = async () => {
   if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
     console.log('Score response limit exceeded, stopping listener.');
     return [];
@@ -213,30 +230,45 @@ const filterApiKey = async () => {
 
   const {
     extensionEnabled: isEnabled,
-    openaiApiKey: apiKey,
-  } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
+    keyOpenai,
+    keyGroq,
+    model,
+  } = await chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model'])
+  if (!model) {
+    console.log('>> no model selected')
+    return
+  }
+  const m = {...models[model]}
 
   if (!isEnabled) {
     console.log('>> extension is disabled');
     return null
-  } else if (!apiKey) {
-    console.log('>> no openai api key');
+  } else if (!m) {
+    console.error('>> no model by name', model);
     return null
-  } else {
-    return apiKey
   }
+
+  if (model === 'gpt4o') {
+    m.apiKey = keyOpenai
+  } else if (model === 'llama70b') {
+    m.apiKey = keyGroq
+  } else {
+    console.error('>> no model by name', model);
+  }
+
+  return m
 }
 
-const doScoreVideo = async (apiKey, getNextBatch) => {
+const doScoreVideo = async (model, getNextBatch) => {
   const batch = getNextBatch()
   if (batch) {
-    return await gpt4.genScores(apiKey, batch)
+    return await api.genScores(model, batch)
   } else {
     return []
   }
 }
 
-const onNextVideo = (video, apiKey) => {
+const onNextVideo = (video, model) => {
   video.style.opacity = 0;
   video.style.pointerEvents = 'none';
 
@@ -252,26 +284,26 @@ const onNextVideo = (video, apiKey) => {
   const title = titleEl.innerText
   if (!bufferTrailingLoader) {
     bufferTrailingLoader = sleep(2000)
-      .then(() => doScoreVideo(apiKey, () => buffer.getNextBatch()))
+      .then(() => doScoreVideo(model, () => buffer.getNextBatch()))
       .then(meterScores)
       .then(displayVideos)
   }
 
-  doScoreVideo(apiKey, () => buffer.append(title))
+  doScoreVideo(model, () => buffer.append(title))
     .then(meterScores)
     .then(displayVideos)
 }
 
 const observeVideos = (videos) => {
-  filterApiKey().then(apiKey => {
-    if (apiKey) {
+  filterModel().then(model => {
+    if (model) {
       const youtubeObserver = new MutationObserver(() => {
         // pre-remove unwanted elements - e.g. ads
         filterRemoved(document);
 
         q.allVideos().forEach((video) => {
           if (!(filterRemoved(video) || filterSeen(video))) {
-            onNextVideo(video, apiKey)
+            onNextVideo(video, model)
           }
         });
       });

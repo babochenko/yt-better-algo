@@ -19,8 +19,17 @@
     <label for="enabled-toggle" class="toggle-label">Enable Extension</label>
   </div>
 
-  <label for="apiKey">OpenAI API Key:</label>
-  <input type="text" id="apiKey" placeholder="Enter your OpenAI API key" />
+  <label for="model">Choose the model:</label>
+  <select id="model">
+      <option value="gpt4o" selected>gpt4o</option>
+      <option value="llama70b">groq/llama3-80b</option>
+  </select>
+
+  <label for="key-openai">OpenAI API Key:</label>
+  <input type="password" id="key-openai" placeholder="Enter your OpenAI API key" />
+
+  <label for="key-groq">Groq API Key:</label>
+  <input type="password" id="key-groq" placeholder="Enter your Groq API key" />
 
   <button id="saveSettings">Save Settings</button>
 
