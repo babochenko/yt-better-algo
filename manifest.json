@@ -4,10 +4,6 @@
   "version": "1.0",
   "description": "Filters YouTube search results using AI to compare video titles with the search query.",
   "permissions": ["activeTab", "scripting", "storage"],
-  "background": {
-    "service_worker": "./service_worker/sw.js",
-    "type": "module"
-  },
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/"],
