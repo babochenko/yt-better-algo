@@ -24,6 +24,42 @@ class Buffer {
   }
 }
 
+class Q {
+
+  videosContainer = () => {
+    return document.querySelector("#contents.style-scope.ytd-rich-grid-renderer");
+  }
+
+  allVideos = () => {
+    return document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
+  }
+
+  video = (title) => {
+    for (const v of this.allVideos()) {
+      const t = v.querySelector("#video-title")
+      if (t.innerText === title) {
+        return v;
+      }
+    }
+  }
+
+  counter = () => {
+    const counterId = "fairsearch-removed-videos-counter";
+    var counter = document.querySelector(`#${counterId}`);
+    if (!counter) {
+      counter = document.createElement("div");
+      counter.id = counterId;
+      counter.textContent = "videos displayed: 0, removed: 0";
+      counter.style.paddingLeft = '200px';
+      counter.style.background = 'white';
+      
+      const ytHeader = document.querySelector("ytd-masthead")
+      ytHeader.insertBefore(counter, ytHeader.firstChild);
+    }
+    return counter;
+  }
+}
+
 class GPT4 {
   genScores = async (apiKey, videos) => {
     const systemQuery = "You are a helpful assistant.";
@@ -79,37 +115,11 @@ class GPT4 {
 const MAX_VIDEO_THRESHOLD = 10;
 const buffer = new Buffer(15);
 const gpt4 = new GPT4();
+const q = new Q();
 
 let countDisplayed = 0;
 let countRemoved = 0;
 let bufferTrailingLoader = null
-
-const doScoreVideo = async (title, getNextBatch) => {
-  if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
-    console.log('Score response limit exceeded, stopping listener.');
-    return [];
-  }
-
-  const {
-    extensionEnabled: isEnabled,
-    openaiApiKey: apiKey,
-  } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
-
-  if (!isEnabled) {
-    console.log('>> extension is disabled');
-    return [{ title, score: 1 }]
-  } else if (!apiKey) {
-    console.log('>> no openai api key');
-    return [{ title, score: 1 }]
-  }
-
-  const batch = getNextBatch()
-  if (batch) {
-    return await gpt4.genScores(apiKey, batch)
-  } else {
-    return []
-  }
-}
 
 const meterScores = (scores) => {
   const shouldDisplay = Object.groupBy(scores, ({score}) => score > 0.5)
@@ -118,37 +128,23 @@ const meterScores = (scores) => {
   return scores
 }
 
-const queryAllVideos = () => {
-  return document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
-}
-
-const queryVideo = (title) => {
-  const videos = queryAllVideos();
-  for (const v of videos) {
-    const t = v.querySelector("#video-title")
-    if (t.innerText === title) {
-      return v;
-    }
-  }
-}
-
 const onStopLoadingVideos = (observer) => {
   const stopLoader = () => filterRemoved(document)
 
   stopLoader();
-  new MutationObserver(stopLoader).observe(queryAllVideos(), { childList: true, subtree: true });
+  new MutationObserver(stopLoader).observe(q.allVideos(), { childList: true, subtree: true });
 
   observer.disconnect()
 }
 
-const handleScores = (scores) => {
+const displayVideos = (scores) => {
   console.log('scores', JSON.stringify(scores))
+  const counter = q.counter();
+
   scores.forEach(entry => {
     const shouldDisplay = entry.score > 0.5;
 
-    const counter = getCounter();
     const parts = counter.innerText.split(', ');
-
     let displayed = parseInt(parts[0].split(": ")[1], 10)
     let removed = parseInt(parts[1].split(": ")[1], 10)
     if (shouldDisplay) {
@@ -158,33 +154,16 @@ const handleScores = (scores) => {
     }
     counter.textContent = `videos displayed: ${displayed}, removed: ${removed}`
 
-    const video = queryVideo(entry.title)
+    const video = q.video(entry.title)
     if (shouldDisplay) {
       console.log('[on_display]', entry.title)
       video.style.opacity = 1;
       video.style.pointerEvents = 'all';
     } else {
-      video.style.opacity = 1;
       console.log('[on_hide]', entry.title)
       video.remove()
     }
   })
-}
-
-const getCounter = () => {
-  const counterId = "fairsearch-removed-videos-counter";
-  var counter = document.querySelector(`#${counterId}`);
-  if (!counter) {
-    counter = document.createElement("div");
-    counter.id = counterId;
-    counter.textContent = "videos displayed: 0, removed: 0";
-    counter.style.paddingLeft = '200px';
-    counter.style.background = 'white';
-    
-    const ytHeader = document.querySelector("ytd-masthead")
-    ytHeader.insertBefore(counter, ytHeader.firstChild);
-  }
-  return counter;
 }
 
 const selectorsToRemove = {
@@ -226,53 +205,91 @@ const filterSeen = (video) => {
   return false;
 }
 
+const filterApiKey = async () => {
+  if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
+    console.log('Score response limit exceeded, stopping listener.');
+    return [];
+  }
+
+  const {
+    extensionEnabled: isEnabled,
+    openaiApiKey: apiKey,
+  } = await chrome.storage.sync.get(['extensionEnabled', 'openaiApiKey'])
+
+  if (!isEnabled) {
+    console.log('>> extension is disabled');
+    return null
+  } else if (!apiKey) {
+    console.log('>> no openai api key');
+    return null
+  } else {
+    return apiKey
+  }
+}
+
+const doScoreVideo = async (apiKey, getNextBatch) => {
+  const batch = getNextBatch()
+  if (batch) {
+    return await gpt4.genScores(apiKey, batch)
+  } else {
+    return []
+  }
+}
+
+const onNextVideo = (video, apiKey) => {
+  video.style.opacity = 0;
+  video.style.pointerEvents = 'none';
+
+  const titleEl = video.querySelector("#video-title");
+  if (!titleEl) {
+    return
+  } else if (countDisplayed >= 20 || countRemoved >= 50) {
+    console.log('hit a threshold on scored video count - not scoring any more videos')
+    onStopLoadingVideos(youtubeObserver)
+    return
+  }
+
+  const title = titleEl.innerText
+  if (!bufferTrailingLoader) {
+    bufferTrailingLoader = sleep(2000)
+      .then(() => doScoreVideo(apiKey, () => buffer.getNextBatch()))
+      .then(meterScores)
+      .then(displayVideos)
+  }
+
+  doScoreVideo(apiKey, () => buffer.append(title))
+    .then(meterScores)
+    .then(displayVideos)
+}
+
 const observeVideos = (videos) => {
-  const youtubeObserver = new MutationObserver(() => {
-    filterRemoved(document);
-    queryAllVideos().forEach((video) => {
-      if (filterRemoved(video) || filterSeen(video)) {
-        return
-      }
+  filterApiKey().then(apiKey => {
+    if (apiKey) {
+      const youtubeObserver = new MutationObserver(() => {
+        // pre-remove unwanted elements - e.g. ads
+        filterRemoved(document);
 
-      video.style.opacity = 0;
-      video.style.pointerEvents = 'none';
-
-      const titleEl = video.querySelector("#video-title");
-      if (!titleEl) {
-        return
-      } else if (countDisplayed >= 20 || countRemoved >= 50) {
-        console.log('hit a threshold on scored video count - not scoring any more videos')
-        onStopLoadingVideos(youtubeObserver)
-        return
-      }
-
-      const title = titleEl.innerText
-      if (!bufferTrailingLoader) {
-        bufferTrailingLoader = sleep(2000)
-          .then(() => doScoreVideo(title, () => buffer.getNextBatch()))
-          .then(meterScores)
-          .then(handleScores)
-      }
-
-      doScoreVideo(title.innerText, () => buffer.append(title))
-        .then(meterScores)
-        .then(handleScores)
-    });
-  });
-
-  getCounter();
-  youtubeObserver.observe(videos, { childList: true, subtree: true });
+        q.allVideos().forEach((video) => {
+          if (!(filterRemoved(video) || filterSeen(video))) {
+            onNextVideo(video, apiKey)
+          }
+        });
+      });
+    
+      q.counter();
+      youtubeObserver.observe(videos, { childList: true, subtree: true });
+    }
+  })
 }
 
 const waitForVideos = () => new Promise(resolve => {
-  const videosSelector = "#contents.style-scope.ytd-rich-grid-renderer";
-  const videos = document.querySelector(videosSelector);
+  const videos = q.videosContainer()
   if (videos) {
     resolve(videos);
   }
 
   const bodyObserver = new MutationObserver(() => {
-    const videos = document.querySelector(videosSelector);
+    const videos = q.videosContainer()
     if (videos) {
       bodyObserver.disconnect();
       resolve(videos);
