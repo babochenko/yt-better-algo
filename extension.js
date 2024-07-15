@@ -154,6 +154,11 @@ const onStopLoadingVideos = (observer) => {
   observer.disconnect()
 }
 
+const displayVideo = (video) => {
+  video.style.opacity = 1;
+  video.style.pointerEvents = 'all';
+}
+
 const displayVideos = (scores) => {
   console.log('scores', JSON.stringify(scores))
   const counter = q.counter();
@@ -174,8 +179,7 @@ const displayVideos = (scores) => {
     const video = q.video(entry.title)
     if (video && shouldDisplay) {
       console.log('[on_display]', entry.title)
-      video.style.opacity = 1;
-      video.style.pointerEvents = 'all';
+      displayVideo(video)
     } else {
       console.log('[on_hide]', entry.title)
       video.remove()
@@ -222,7 +226,7 @@ const filterSeen = (video) => {
   return false;
 }
 
-const filterModel = async () => {
+const filterSettings = async () => {
   if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
     console.log('Score response limit exceeded, stopping listener.');
     return [];
@@ -269,9 +273,6 @@ const doScoreVideo = async (model, getNextBatch) => {
 }
 
 const onNextVideo = (video, model) => {
-  video.style.opacity = 0;
-  video.style.pointerEvents = 'none';
-
   const titleEl = video.querySelector("#video-title");
   if (!titleEl) {
     return
@@ -295,22 +296,23 @@ const onNextVideo = (video, model) => {
 }
 
 const observeVideos = (videos) => {
-  filterModel().then(model => {
-    if (model) {
-      const youtubeObserver = new MutationObserver(() => {
-        // pre-remove unwanted elements - e.g. ads
-        filterRemoved(document);
+  filterSettings().then(model => {
+    const youtubeObserver = new MutationObserver(() => {
+      // pre-remove unwanted elements - e.g. ads
+      filterRemoved(document);
 
-        q.allVideos().forEach((video) => {
-          if (!(filterRemoved(video) || filterSeen(video))) {
-            onNextVideo(video, model)
-          }
-        });
+      q.allVideos().forEach((video) => {
+        if (!model) {
+          displayVideo(video)
+          return
+        } else if (!(filterRemoved(video) || filterSeen(video))) {
+          onNextVideo(video, model)
+        }
       });
-    
-      q.counter();
-      youtubeObserver.observe(videos, { childList: true, subtree: true });
-    }
+    });
+
+    q.counter();
+    youtubeObserver.observe(videos, { childList: true, subtree: true });
   })
 }
 
