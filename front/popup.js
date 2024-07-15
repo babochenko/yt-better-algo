@@ -1,3 +1,5 @@
+const saveBtn = () => document.getElementById('saveSettings');
+
 document.addEventListener('DOMContentLoaded', function () {
   // Load saved settings when the popup is opened
   chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model'], function (result) {
@@ -8,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Save settings when the Save button is clicked
-  document.getElementById('saveSettings').addEventListener('click', function () {
+  saveBtn().addEventListener('click', function () {
     const extensionEnabled = document.getElementById('enabled-toggle').checked;
     const keyOpenai = document.getElementById('key-openai').value.trim();
     const keyGroq = document.getElementById('key-groq').value.trim();
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
       keyGroq,
       model,
     }, function () {
-      console.log('Settings saved successfully!');
+      saveBtn().innerText = 'Saved!'
     });
   });
 });
