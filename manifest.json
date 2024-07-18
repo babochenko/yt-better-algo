@@ -3,10 +3,10 @@
   "name": "YouTube AI Filter",
   "version": "1.0",
   "description": "Filters YouTube search results using AI to compare video titles with the search query.",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["scripting", "storage"],
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/"],
+      "matches": ["https://www.youtube.com/*"],
       "js": ["./extension.js"],
       "css": ["./injection.css"],
       "run_at": "document_idle"
