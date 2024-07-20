@@ -31,7 +31,7 @@ class Q {
   }
 
   allVideos = () => {
-    return document.querySelectorAll("ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
+    return document.querySelectorAll("ytd-browse:not(:has(#page-header-container)) ytd-rich-item-renderer.style-scope.ytd-rich-grid-row");
   }
 
   video = (title) => {
