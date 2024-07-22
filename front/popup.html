@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>YouTube AI Filter Settings</title>
+  <title>FairSearch Settings</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     label { display: block; margin-top: 10px; }
@@ -9,10 +9,16 @@
     button { margin-top: 10px; padding: 5px 10px; }
     .toggle-container { display: flex; align-items: center; }
     .toggle-label { margin-left: 10px; }
+    #custom-query-container { display: none }
+    #saveSettings {
+      background-color: lightblue;
+      cursor: pointer;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h1>YouTube AI Filter Settings</h1>
+  <h1>FairSearch Settings</h1>
 
   <div class="toggle-container">
     <input type="checkbox" id="enabled-toggle">
@@ -30,6 +36,12 @@
 
   <label for="key-groq">Groq API Key:</label>
   <input type="password" id="key-groq" placeholder="Enter your Groq API key" />
+
+  <button id="edit-custom-query">Edit Custom LLM Query</button>
+  <div id="custom-query-container">
+    <label for="custom-query">Enter your string:</label>
+    <textarea id="custom-query" rows="8" cols="80"></textarea>
+  </div>
 
   <button id="saveSettings">Save Settings</button>
 

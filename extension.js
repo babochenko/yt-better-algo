@@ -68,25 +68,31 @@ const models = {
     url: "https://api.groq.com/openai/v1/chat/completions",
     model: "llama3-70b-8192",
     apiKey: '...',
+    customQuery: '...',
   }, 'gpt4o': {
     url: "https://api.openai.com/v1/chat/completions",
     model: "gpt-4o",
     apiKey: '...',
+    customQuery: '...',
   }
 }
+
+const baseQueryString = `I have a list of videos:
+
+{videos}
+
+For each video, provide a score between 0 and 1, where 0 means that this video is` +
+` not helpful and distracting, and 1 means that this video is useful for my personal` +
+` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
+` prefixes, or any other delimiters`;
 
 class API {
 
   genScores = async (model, videos) => {
     const systemQuery = "You are a helpful assistant.";
-    const userQuery = `I have a list of videos:
 
-    ${"- " + videos.join("\n- ")}
-
-    For each video, provide a score between 0 and 1, where 0 means that this video is` +
-    ` not helpful and distracting, and 1 means that this video is useful for my personal` +
-    ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
-    ` prefixes, or any other delimiters`;
+    const titles = "- " + videos.join("\n- ")
+    const userQuery = model.customQuery.replace("{videos}", titles)
 
     const body = JSON.stringify({
       model: model.model,
@@ -237,7 +243,8 @@ const filterSettings = async () => {
     keyOpenai,
     keyGroq,
     model,
-  } = await chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model'])
+    customQuery,
+  } = await chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model', 'customQuery'])
   if (!model) {
     console.log('>> no model selected')
     return
@@ -259,6 +266,7 @@ const filterSettings = async () => {
   } else {
     console.error('>> no model by name', model);
   }
+  m.customQuery = customQuery
 
   return m
 }

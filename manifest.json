@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "YouTube AI Filter",
+  "name": "FairSearch",
   "version": "1.0",
   "description": "Filters YouTube search results using AI to compare video titles with the search query.",
   "permissions": ["scripting", "storage"],
