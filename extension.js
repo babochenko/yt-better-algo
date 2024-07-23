@@ -99,8 +99,9 @@ class Q {
       const container = document.createElement('div');
       container.id = 'fairsearch-main-container';
       container.style.display = 'block';
-      container.style.paddingLeft = '100px';
       container.style.background = 'white';
+      container.style.borderBottom = 'thin solid lightgrey';
+      container.style.padding = '4px 0 4px 100px';
 
       counter = document.createElement("div");
       counter.id = counterId;
