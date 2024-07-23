@@ -46,19 +46,75 @@ class Q {
     }
   }
 
+  videoStats = (parent) => {
+    const id = "fairsearch-removed-videos-stats";
+    var stats = document.querySelector(`#${id}`);
+    if (!stats) {
+      const container = document.createElement('div');
+      container.id = 'fairsearch-removed-videos-container';
+      container.style.display = 'inline-block';
+
+      const button = document.createElement('button');
+      button.textContent = 'Video Stats';
+
+      stats = document.createElement("div");
+      stats.id = id;
+      stats.innerText = "<Stats will be here>"
+      stats.style.background = 'white';
+      stats.style.display = 'none';
+
+      button.addEventListener('click', (e) => {
+        if (stats.style.display === 'none') {
+          const rect = button.getBoundingClientRect();
+          stats.style.top = `${rect.bottom}px`;
+          stats.style.left = `${rect.left}px`;
+          stats.style.display = 'block';
+          stats.style.position = 'absolute';
+          stats.style.padding = '10px';
+          stats.style.zIndex = '999';
+        } else {
+          stats.style.display = 'none';
+        }
+        e.stopPropagation();
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!stats.contains(event.target)) {
+          stats.style.display = 'none';
+        }
+      });
+
+      container.appendChild(button);
+      container.appendChild(stats);
+
+      parent.insertAdjacentElement('afterend', container);
+    }
+    return stats;
+  }
+
   counter = () => {
     const counterId = "fairsearch-removed-videos-counter";
     var counter = document.querySelector(`#${counterId}`);
     if (!counter) {
+      const container = document.createElement('div');
+      container.id = 'fairsearch-main-container';
+      container.style.display = 'block';
+      container.style.paddingLeft = '100px';
+      container.style.background = 'white';
+
       counter = document.createElement("div");
       counter.id = counterId;
       counter.textContent = "videos displayed: 0, removed: 0";
-      counter.style.paddingLeft = '200px';
+      counter.style.display = 'inline-block';
+      counter.style.marginRight = '50px';
       counter.style.background = 'white';
-      
+
+      container.appendChild(counter);
+
       const ytHeader = document.querySelector("ytd-masthead")
-      ytHeader.insertBefore(counter, ytHeader.firstChild);
+      ytHeader.insertBefore(container, ytHeader.firstChild);
     }
+    this.videoStats(counter)
     return counter;
   }
 }
