@@ -96,7 +96,7 @@ class Q {
       container.style.display = "inline-block";
 
       const button = document.createElement("button");
-      button.textContent = "Video Stats";
+      button.textContent = "Video Scores";
 
       stats = document.createElement("div");
       stats.id = id;
