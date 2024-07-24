@@ -67,8 +67,6 @@ class Q {
         const headerRow = header.insertRow(0);
         const scoreHeader = headerRow.insertCell(0);
         const titleHeader = headerRow.insertCell(1);
-        scoreHeader.innerText = 'Score';
-        titleHeader.innerText = 'Title';
         stats.appendChild(table);
     }
 
@@ -461,7 +459,7 @@ const waitForVideos = () =>
   });
 
 const displayPredefinedSearches = () => {
-  const searches = ["--- select", "Machine learning", "Minecraft"];
+  const searches = ["--- Common Searches", "Machine learning", "Minecraft"];
 
   const search = document.querySelector("#search-form");
   if (!search) {
@@ -480,7 +478,7 @@ const displayPredefinedSearches = () => {
 
   dropdown.addEventListener("change", () => {
     const query = dropdown.options[dropdown.selectedIndex].text;
-    if (query !== "--- select") {
+    if (!query.startsWith("---")) {
       window.location.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(
         query
       )}`;
