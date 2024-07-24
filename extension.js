@@ -49,6 +49,44 @@ class Q {
     }
   };
 
+  addVideoStats = (data) => {
+    if (!data.score === undefined || !data.title === undefined) {
+      console.error('unsupported video stat:', JSON.stringify(data))
+      return
+    }
+
+    const id = "fairsearch-removed-videos-stats";
+    var stats = document.querySelector(`#${id}`);
+
+    // Check if the table exists, if not, create it
+    let table = stats.querySelector('table');
+    if (!table) {
+        stats.innerText = '';
+        table = document.createElement('table');
+        const header = table.createTHead();
+        const headerRow = header.insertRow(0);
+        const scoreHeader = headerRow.insertCell(0);
+        const titleHeader = headerRow.insertCell(1);
+        scoreHeader.innerText = 'Score';
+        titleHeader.innerText = 'Title';
+        stats.appendChild(table);
+    }
+
+    // Create a new row in the table
+    const row = table.insertRow();
+    const scoreCell = row.insertCell(0);
+    const titleCell = row.insertCell(1);
+
+    // Set the cell values
+    scoreCell.innerText = data.score;
+    titleCell.innerText = data.title;
+
+    // Calculate the row color based on the score
+    const red = Math.min(255, Math.max(0, Math.round((1 - data.score) * 255)));
+    const green = Math.min(255, Math.max(0, Math.round(data.score * 255)));
+    row.style.backgroundColor = `rgb(${red}, ${green}, 0)`;
+  }
+
   videoStats = (parent) => {
     const id = "fairsearch-removed-videos-stats";
     var stats = document.querySelector(`#${id}`);
@@ -212,6 +250,11 @@ const meterScores = (scores) => {
   const shouldDisplay = Object.groupBy(scores, ({ score }) => score > 0.5);
   countDisplayed += (shouldDisplay[true] || []).length;
   countRemoved += (shouldDisplay[false] || []).length;
+
+  for (let score of scores) { 
+    q.addVideoStats(score)
+  }
+
   return scores;
 };
 
