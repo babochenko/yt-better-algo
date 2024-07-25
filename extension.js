@@ -24,12 +24,41 @@ class Buffer {
   }
 }
 
+function batches(arr, size) {
+  arr = Array.from(arr)
+
+  const result = [];
+  for (let i = 0; i < arr.length; i += size) {
+      result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+
 class Q {
   videosContainer = () => {
     return document.querySelector(
       "#contents.style-scope.ytd-rich-grid-renderer"
     );
   };
+
+  compactRows = () => {
+    const groups = batches(this.allVideos(), 3)
+
+    let j = 0;
+    const rows = this.allVideoRows()
+    for (let group of groups) {
+      for (let vid of group) {
+        rows[j].appendChild(vid)
+      }
+      j++;
+    }
+  }
+
+  allVideoRows = () => {
+    return document.querySelectorAll(
+      "ytd-browse:not(:has(#page-header-container)) div#contents.style-scope.ytd-rich-grid-row"
+    );
+  }
 
   allVideos = () => {
     return document.querySelectorAll(
@@ -299,6 +328,10 @@ const displayVideos = (scores) => {
       video.remove();
     }
   });
+
+  if (scores.length > 0) {
+    q.compactRows();
+  }
 };
 
 const selectorsToRemove = {
