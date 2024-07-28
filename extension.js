@@ -492,7 +492,7 @@ const waitForVideos = () =>
   });
 
 const displayPredefinedSearches = () => {
-  const searches = ["--- Common Searches", "Machine learning"];
+  const searches = ["--- Quick Search", "Machine learning"];
 
   const search = document.querySelector("#search-form");
   if (!search) {
