@@ -1,5 +1,4 @@
-ytd-browse:not(:has(#page-header-container))
-ytd-rich-item-renderer.style-scope.ytd-rich-grid-row {
+ytd-rich-item-renderer {
     opacity: 0;
     pointer-events: none;
 }

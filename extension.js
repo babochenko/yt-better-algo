@@ -42,27 +42,18 @@ class Q {
   };
 
   compactRows = () => {
-    const groups = batches(this.allVideos(), 3)
-
-    let j = 0;
-    const rows = this.allVideoRows()
-    for (let group of groups) {
-      for (let vid of group) {
-        rows[j].appendChild(vid)
-      }
-      j++;
-    }
+    this.allVideoSections().forEach(s => s.remove())
   }
 
-  allVideoRows = () => {
+  allVideoSections = () => {
     return document.querySelectorAll(
-      "ytd-browse:not(:has(#page-header-container)) div#contents.style-scope.ytd-rich-grid-row"
+      "ytd-rich-section-renderer"
     );
   }
 
   allVideos = () => {
     return document.querySelectorAll(
-      "ytd-browse:not(:has(#page-header-container)) ytd-rich-item-renderer.style-scope.ytd-rich-grid-row"
+      "ytd-rich-item-renderer"
     );
   };
 
@@ -349,7 +340,11 @@ const filterRemoved = (video) => {
         console.log("[filter_rm]", title.innerText);
       }
 
-      toRemove.remove();
+      try {
+        toRemove.remove();
+      } catch (error) {
+        console.error(error)
+      }
       return true;
     }
   }
