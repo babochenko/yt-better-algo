@@ -151,7 +151,7 @@ class Q {
     return stats;
   };
 
-  counter = () => {
+  counter = (isEnabled) => {
     const counterId = "fairsearch-removed-videos-counter";
     var counter = document.querySelector(`#${counterId}`);
     if (!counter) {
@@ -161,6 +161,15 @@ class Q {
       container.style.background = "white";
       container.style.borderBottom = "thin solid lightgrey";
       container.style.padding = "4px 0 4px 100px";
+
+      if (!isEnabled) {
+        var text = document.createElement("span");
+        text.innerText = 'DISABLED'
+        text.style.padding = '3px'
+        text.style.marginRight = '12px'
+        text.style.background = 'red'
+        container.appendChild(text);
+      }
 
       counter = document.createElement("div");
       counter.id = counterId;
@@ -295,7 +304,7 @@ const displayVideo = (video) => {
 
 const displayVideos = (scores) => {
   console.log("scores", JSON.stringify(scores));
-  const counter = q.counter();
+  const counter = q.counter(true);
 
   scores.forEach((entry) => {
     const shouldDisplay = entry.score > 0.5;
@@ -389,7 +398,7 @@ const filterSettings = async () => {
   ]);
   if (!model) {
     console.log(">> no model selected");
-    return;
+    return null;
   }
   const m = { ...models[model] };
 
@@ -449,6 +458,7 @@ const onNextVideo = (video, model) => {
 
 const observeVideos = (videos) => {
   filterSettings().then((model) => {
+    q.counter(model);
     const youtubeObserver = new MutationObserver(() => {
       // pre-remove unwanted elements - e.g. ads
       filterRemoved(document);
@@ -463,7 +473,6 @@ const observeVideos = (videos) => {
       });
     });
 
-    q.counter();
     youtubeObserver.observe(videos, { childList: true, subtree: true });
   });
 };
