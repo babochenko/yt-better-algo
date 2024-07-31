@@ -53,7 +53,7 @@ class Q {
 
   allVideos = () => {
     return document.querySelectorAll(
-      "ytd-rich-item-renderer"
+      "ytd-browse:not(:has(#page-header-container)) ytd-rich-item-renderer"
     );
   };
 
