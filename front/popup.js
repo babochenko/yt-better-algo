@@ -7,21 +7,50 @@ For each video, provide a score between 0 and 1, where 0 means that this video i
 ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
 ` prefixes, or any other delimiters`;
 
+const baseQuickSearches = `Machine Learning`
+
 const saveBtn = () => document.getElementById('saveSettings');
 
-document.getElementById('edit-custom-query').addEventListener('click', () => {
+const querybtn = document.getElementById('edit-custom-query');
+querybtn.addEventListener('click', () => {
   const container = document.getElementById('custom-query-container');
-  container.style.display = 'block';
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    querybtn.innerText = 'Edit Custom LLM Query';
+  } else {
+    container.style.display = 'block';
+    querybtn.innerText = 'Hide Custom LLM Query';
+  }
+});
+
+const qsbtn = document.getElementById('edit-quick-searches');
+qsbtn.addEventListener('click', () => {
+  const container = document.getElementById('quick-searches-container');
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    qsbtn.innerText = 'Edit Quick Searches';
+  } else {
+    container.style.display = 'block';
+    qsbtn.innerText = 'Hide Quick Searches';
+  }
 });
 
 document.addEventListener('DOMContentLoaded', function () {
   // Load saved settings when the popup is opened
-  chrome.storage.sync.get(['extensionEnabled', 'keyOpenai', 'keyGroq', 'model', 'customQuery'], function (result) {
+  chrome.storage.sync.get([
+    'extensionEnabled',
+    'keyOpenai',
+    'keyGroq',
+    'model',
+    'customQuery',
+    'quickSearches',
+  ], function (result) {
     document.getElementById('enabled-toggle').checked = result.extensionEnabled ?? false;
     document.getElementById('key-openai').value = result.keyOpenai ?? '';
     document.getElementById('key-groq').value = result.keyGroq ?? '';
     document.getElementById('model').value = result.model ?? 'gpt4o';
     document.getElementById('custom-query').value = result.customQuery ?? baseQueryString;
+    document.getElementById('quick-searches').value = result.quickSearches ?? baseQuickSearches;
   });
 
   // Save settings when the Save button is clicked
@@ -39,12 +68,15 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    const quickSearches = document.getElementById('quick-searches').value;
+
     chrome.storage.sync.set({
       extensionEnabled,
       keyOpenai,
       keyGroq,
       model,
       customQuery,
+      quickSearches,
     }, function () {
       saveBtn().innerText = 'Saved!'
     });

@@ -203,16 +203,6 @@ const models = {
   },
 };
 
-const baseQueryString =
-  `I have a list of videos:
-
-{videos}
-
-For each video, provide a score between 0 and 1, where 0 means that this video is` +
-  ` not helpful and distracting, and 1 means that this video is useful for my personal` +
-  ` growth. Respond with just the list of numbers, comma-separated, without spaces, ` +
-  ` prefixes, or any other delimiters`;
-
 class API {
   genScores = async (model, videos) => {
     const systemQuery = "You are a helpful assistant.";
@@ -495,8 +485,16 @@ const waitForVideos = () =>
     bodyObserver.observe(document.body, { childList: true, subtree: true });
   });
 
-const displayPredefinedSearches = () => {
-  const searches = ["--- Quick Search", "Machine learning"];
+const displayPredefinedSearches = async () => {
+
+  const {
+    quickSearches,
+  } = await chrome.storage.sync.get([
+    "quickSearches",
+  ]);
+
+  const userSearches = quickSearches?.split('\n')?.map(s => s.trim())?.filter(s => !s.empty) || ["Machine Learning"]
+  const searches = ["--- Quick Search", ...userSearches];
 
   const search = document.querySelector("#search-form");
   if (!search) {
