@@ -24,16 +24,6 @@ class Buffer {
   }
 }
 
-function batches(arr, size) {
-  arr = Array.from(arr)
-
-  const result = [];
-  for (let i = 0; i < arr.length; i += size) {
-      result.push(arr.slice(i, i + size));
-  }
-  return result;
-}
-
 class Q {
   videosContainer = () => {
     return document.querySelector(
@@ -188,21 +178,6 @@ class Q {
   };
 }
 
-const models = {
-  llama70b: {
-    url: "https://api.groq.com/openai/v1/chat/completions",
-    model: "llama3-70b-8192",
-    apiKey: "...",
-    customQuery: "...",
-  },
-  gpt4o: {
-    url: "https://api.openai.com/v1/chat/completions",
-    model: "gpt-4o",
-    apiKey: "...",
-    customQuery: "...",
-  },
-};
-
 class API {
   genScores = async (model, videos) => {
     const systemQuery = "You are a helpful assistant.";
@@ -254,37 +229,121 @@ class API {
   };
 }
 
+class Filters {
+  models = {
+    llama70b: {
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      model: "llama3-70b-8192",
+      apiKey: "...",
+      customQuery: "...",
+    },
+    gpt4o: {
+      url: "https://api.openai.com/v1/chat/completions",
+      model: "gpt-4o",
+      apiKey: "...",
+      customQuery: "...",
+    },
+  };
+
+  selectorsToRemove = {
+    breakingNews: "ytd-rich-shelf-renderer",
+    adVideo: "ytd-display-ad-renderer",
+    continuation: "ytd-continuation-item-renderer",
+  };
+
+  removed = (el) => {
+    for (const [_, sel] of Object.entries(this.selectorsToRemove)) {
+      const toRemove = el.querySelector(sel);
+      if (toRemove) {
+        const title = toRemove.querySelector("#video-title");
+        if (title) {
+          console.log("[filter_rm]", title.innerText);
+        }
+
+        toRemove.remove();
+        return true;
+      }
+    }
+    return false;
+  };
+
+  seen = (video) => {
+    const titleEl = video.querySelector("#video-title");
+    if (!(titleEl && "innerText" in titleEl)) {
+      return false;
+    }
+
+    const title = titleEl.innerText;
+    const attr = "fsch-seen";
+    if (video.getAttribute(attr) === "true") {
+      // console.log('[filter_seen]', title)
+      return true;
+    }
+    console.log("[vid]", title);
+    video.setAttribute(attr, "true");
+    return false;
+  };
+
+  settings = async () => {
+    if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
+      console.log("Score response limit exceeded, stopping listener.");
+      return [];
+    }
+
+    const {
+      extensionEnabled: isEnabled,
+      keyOpenai,
+      keyGroq,
+      model,
+      customQuery,
+    } = await chrome.storage.sync.get([
+      "extensionEnabled",
+      "keyOpenai",
+      "keyGroq",
+      "model",
+      "customQuery",
+    ]);
+    if (!model) {
+      console.log(">> no model selected");
+      return null;
+    }
+    const m = { ...this.models[model] };
+
+    if (!isEnabled) {
+      console.log(">> extension is disabled");
+      return null;
+    } else if (!m) {
+      console.error(">> no model by name", model);
+      return null;
+    }
+
+    if (model === "gpt4o") {
+      m.apiKey = keyOpenai;
+    } else if (model === "llama70b") {
+      m.apiKey = keyGroq;
+    } else {
+      console.error(">> no model by name", model);
+    }
+    m.customQuery = customQuery;
+
+    return m;
+  };
+}
+
 const MAX_VIDEO_THRESHOLD = 10;
 const buffer = new Buffer(10);
 const api = new API();
 const q = new Q();
+const filter = new Filters();
 
-let countDisplayed = 0;
-let countRemoved = 0;
 let bufferTrailingLoader = null;
 
 const meterScores = (scores) => {
-  const shouldDisplay = Object.groupBy(scores, ({ score }) => score > 0.5);
-  countDisplayed += (shouldDisplay[true] || []).length;
-  countRemoved += (shouldDisplay[false] || []).length;
-
   for (let score of scores) { 
     q.addVideoStats(score)
   }
 
   return scores;
-};
-
-const onStopLoadingVideos = (observer) => {
-  const stopLoader = () => filterRemoved(document);
-
-  stopLoader();
-  new MutationObserver(stopLoader).observe(q.allVideos(), {
-    childList: true,
-    subtree: true,
-  });
-
-  observer.disconnect();
 };
 
 const displayVideo = (video) => {
@@ -324,94 +383,6 @@ const displayVideos = (scores) => {
   }
 };
 
-const selectorsToRemove = {
-  breakingNews: "ytd-rich-shelf-renderer",
-  adVideo: "ytd-display-ad-renderer",
-  continuation: "ytd-continuation-item-renderer",
-};
-
-const filterRemoved = (video) => {
-  for (const [_, sel] of Object.entries(selectorsToRemove)) {
-    const toRemove = video.querySelector(sel);
-    if (toRemove) {
-      const title = toRemove.querySelector("#video-title");
-      if (title) {
-        console.log("[filter_rm]", title.innerText);
-      }
-
-      try {
-        toRemove.remove();
-      } catch (error) {
-        console.error(error)
-      }
-      return true;
-    }
-  }
-  return false;
-};
-
-const filterSeen = (video) => {
-  const titleEl = video.querySelector("#video-title");
-  if (!(titleEl && "innerText" in titleEl)) {
-    return false;
-  }
-
-  const title = titleEl.innerText;
-  const attr = "fsch-seen";
-  if (video.getAttribute(attr) === "true") {
-    // console.log('[filter_seen]', title)
-    return true;
-  }
-  console.log("[vid]", title);
-  video.setAttribute(attr, "true");
-  return false;
-};
-
-const filterSettings = async () => {
-  if (chrome.runtime.scoreCount > MAX_VIDEO_THRESHOLD) {
-    console.log("Score response limit exceeded, stopping listener.");
-    return [];
-  }
-
-  const {
-    extensionEnabled: isEnabled,
-    keyOpenai,
-    keyGroq,
-    model,
-    customQuery,
-  } = await chrome.storage.sync.get([
-    "extensionEnabled",
-    "keyOpenai",
-    "keyGroq",
-    "model",
-    "customQuery",
-  ]);
-  if (!model) {
-    console.log(">> no model selected");
-    return null;
-  }
-  const m = { ...models[model] };
-
-  if (!isEnabled) {
-    console.log(">> extension is disabled");
-    return null;
-  } else if (!m) {
-    console.error(">> no model by name", model);
-    return null;
-  }
-
-  if (model === "gpt4o") {
-    m.apiKey = keyOpenai;
-  } else if (model === "llama70b") {
-    m.apiKey = keyGroq;
-  } else {
-    console.error(">> no model by name", model);
-  }
-  m.customQuery = customQuery;
-
-  return m;
-};
-
 const doScoreVideo = async (model, getNextBatch) => {
   const batch = getNextBatch();
   if (batch) {
@@ -424,12 +395,6 @@ const doScoreVideo = async (model, getNextBatch) => {
 const onNextVideo = (video, model) => {
   const titleEl = video.querySelector("#video-title");
   if (!titleEl) {
-    return;
-  } else if (countDisplayed >= 20 || countRemoved >= 50) {
-    console.log(
-      "hit a threshold on scored video count - not scoring any more videos"
-    );
-    onStopLoadingVideos(youtubeObserver);
     return;
   }
 
@@ -447,17 +412,17 @@ const onNextVideo = (video, model) => {
 };
 
 const observeVideos = (videos) => {
-  filterSettings().then((model) => {
+  filter.settings().then((model) => {
     q.counter(model);
     const youtubeObserver = new MutationObserver(() => {
       // pre-remove unwanted elements - e.g. ads
-      filterRemoved(document);
+      filter.removed(document);
 
       q.allVideos().forEach((video) => {
         if (!model) {
           displayVideo(video);
           return;
-        } else if (!(filterRemoved(video) || filterSeen(video))) {
+        } else if (!(filter.removed(video) || filter.seen(video))) {
           onNextVideo(video, model);
         }
       });
