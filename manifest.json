@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "BetterAlgo",
   "version": "1.0",
-  "description": "Filters YouTube search results using AI to compare video titles with the search query.",
+  "description": "Filter YouTube recommendations using AI",
   "permissions": ["scripting", "storage"],
   "content_scripts": [
     {
