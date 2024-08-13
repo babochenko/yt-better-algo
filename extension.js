@@ -487,5 +487,5 @@ const displayPredefinedSearches = async () => {
   // search.appendChild(dropdown);
 };
 
-displayPredefinedSearches();
 waitForVideos().then(observeVideos);
+
