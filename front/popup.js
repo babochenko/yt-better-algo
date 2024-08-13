@@ -23,17 +23,17 @@ querybtn.addEventListener('click', () => {
   }
 });
 
-const qsbtn = document.getElementById('edit-quick-searches');
-qsbtn.addEventListener('click', () => {
-  const container = document.getElementById('quick-searches-container');
-  if (container.style.display === 'block') {
-    container.style.display = 'none';
-    qsbtn.innerText = 'Edit Quick Searches';
-  } else {
-    container.style.display = 'block';
-    qsbtn.innerText = 'Hide Quick Searches';
-  }
-});
+// const qsbtn = document.getElementById('edit-quick-searches');
+// qsbtn.addEventListener('click', () => {
+//   const container = document.getElementById('quick-searches-container');
+//   if (container.style.display === 'block') {
+//     container.style.display = 'none';
+//     qsbtn.innerText = 'Edit Quick Searches';
+//   } else {
+//     container.style.display = 'block';
+//     qsbtn.innerText = 'Hide Quick Searches';
+//   }
+// });
 
 document.addEventListener('DOMContentLoaded', function () {
   // Load saved settings when the popup is opened
