@@ -484,7 +484,7 @@ const displayPredefinedSearches = async () => {
       )}`;
     }
   });
-  search.appendChild(dropdown);
+  // search.appendChild(dropdown);
 };
 
 displayPredefinedSearches();
