@@ -3,7 +3,7 @@
   "name": "BetterAlgo",
   "version": "1.0",
   "description": "Filter YouTube recommendations using AI",
-  "permissions": ["scripting", "storage"],
+  "permissions": ["storage"],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
