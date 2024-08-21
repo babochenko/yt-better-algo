@@ -1,8 +1,8 @@
 
 # BetterAlgo
 
-<a href="https://chromewebstore.google.com/detail/betteralgo/bjhniadfmfipfgmojoionbljnplfnjoc?authuser=0&hl=en">
-    <img src="https://img.shields.io/chrome-web-store/rating/bjhniadfmfipfgmojoionbljnplfnjoc" />
+Chrome Web Store link: <a href="https://chromewebstore.google.com/detail/betteralgo/bjhniadfmfipfgmojoionbljnplfnjoc?authuser=0&hl=en" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/chrome-web-store/users/bjhniadfmfipfgmojoionbljnplfnjoc" />
 </a>
 
 A Chrome extension which filters out YouTube's recommended videos based on their usefulness (by default), or whatever other rule you want, using one of available LLM backends
