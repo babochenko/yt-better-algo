@@ -1,7 +1,7 @@
 
 # BetterAlgo
 
-<a href="https://chromewebstore.google.com/detail/betteralgo/bjhniadfmfipfgmojoionbljnplfnjoc?authuser=0&hl=en>
+<a href="https://chromewebstore.google.com/detail/betteralgo/bjhniadfmfipfgmojoionbljnplfnjoc?authuser=0&hl=en">
     <img src="https://img.shields.io/chrome-web-store/rating/bjhniadfmfipfgmojoionbljnplfnjoc" />
 </a>
 
